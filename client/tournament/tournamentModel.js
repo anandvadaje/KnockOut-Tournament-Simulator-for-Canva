@@ -1,41 +1,89 @@
-/**
- * Tournament model representing the state of the tournament.
- * @extends Model
- */
+/*
+  ClassName: TournamentModel
+  Purpose:   Extends the base model class to handle all the 
+             tournament data used by the business logic tournamentController
+*/
+
 class TournamentModel extends Model {
-  /**
-   * Creates an instance of TournamentModel.
-   *
-   * @param {number} numberOfTeams - Number of teams playing in the tournament.
-   * @param {number} teamsPerMatch - Number of teams that play per match.
-   * @param {any} numberOfRounds - Number of rounds that will be played.
-   * @returns {void}
-   */
+  
+  //Constructs an instance of the tournament model.
   constructor(numberOfTeams, teamsPerMatch, numberOfRounds) {
     super();
-    // Defaults
     this.set('id', null);
     this.set('teams', {});
     this.set('winner', {});
 
-    // Initialize empty tournament
     this.set('numberOfTeams', numberOfTeams);
     this.set('teamsPerMatch', teamsPerMatch);
     this.set('numberOfRounds', numberOfRounds);
-    this.set('roundMatchUps', this._initRoundMatchUps());
-    this.set('numberOfMatches', this._numberOfMatches());
+    this.set('roundMatchUps', this.initializeRoundMatchUps());
+    this.set('numberOfMatches', this.numberOfMatches());
   }
 
-  /**
-   * Calculates the number of matches that will be played based on the
-   * number of teams and teams per match.
-   *
-   * Simply keeps on dividing the number of teams by the teams per match
-   * until the last round.
-   *
-   * @returns {number} Number of matches that will be played.
-   */
-  _numberOfMatches() {
+  //Getter function for numberOfTeams parameter
+  getNumberOfTeams() {
+    return this.get('numberOfTeams');
+  }
+
+  //Getter function for teamsPerMatch parameter
+  getTeamsPerMatch() {
+    return this.get('teamsPerMatch');
+  }
+
+  //Getter function for numberOfRounds parameter
+  getNumberOfRounds() {
+    return this.get('numberOfRounds');
+  }
+
+  //Setter function for TournamentId parameter
+  setTournamentId(tournamentId) {
+    this.set('id', tournamentId);
+  }
+
+  //Getter function for tournamentId parameter
+  getTournamentId() {
+    return this.get('id');
+  }
+
+  //Setter function for winner parameter
+  setWinner(winner) {
+    return this.set('winner', winner);
+  }
+
+  //Getter function to get team object
+  getTeam(teamId) {
+    const teams = this.get('teams');
+    return teams[teamId];
+  }
+
+  //Getter function to get the matches in a particular round 
+  getRound(round) {
+    const roundMatchUps = this.get('roundMatchUps');
+    return roundMatchUps[round];
+  }
+
+  //Initializes a tournament structure with total match objects for a tournament
+  initializeRoundMatchUps() {
+    const numberOfTeams = this.get('numberOfTeams');
+    const numberOfRounds = this.get('numberOfRounds');
+    const teamsPerMatch = this.get('teamsPerMatch');
+
+    const matches = [];
+    let numberOfMatchesThisRound = numberOfTeams;
+
+    for (let round = 0; round < numberOfRounds; round++) {
+      matches[round] = [];
+      numberOfMatchesThisRound /= teamsPerMatch;
+
+      for (let match = 0; match < numberOfMatchesThisRound; match++) {
+        matches[round].push({});
+      }
+    }
+    return matches;
+  }
+
+  //Calculates and returns the total number of matches that will be played in the tournament
+  numberOfMatches() {
     const numberOfTeams = this.get('numberOfTeams');
     const teamsPerMatch = this.get('teamsPerMatch');
 
@@ -50,27 +98,12 @@ class TournamentModel extends Model {
     return matches;
   }
 
-  /**
-   * Getter for the number of matches that will be played.
-   *
-   * @returns {number} Number of matches that will be played.
-   */
+  //Getter function for numberOfMatches parameter
   getNumberOfMatches() {
     return this.get('numberOfMatches');
   }
 
-  /**
-   * Stores a team with their ID, name, and score, indexed by their team ID.
-   *
-   * @param {Object} team - Team to store
-   * @returns {void}
-   * @example <caption>Example team object.</caption>
-   * {
-   *  teamId: 1,
-   *  name: 'Malicious Tall Jan',
-   *  score: 69
-   * }
-   */
+  //Setter function for teams parameter
   setTeam(team) {
     const teams = this.get('teams');
 
@@ -83,27 +116,7 @@ class TournamentModel extends Model {
     this.set('teams', teams);
   }
 
-  /**
-   * Sets the match score for a given round/match and publishes an
-   * event that a match was completed, passing the scored matchup
-   * to any listeners.
-   *
-   * @param {number} round - The round number.
-   * @param {number} match - The match number.
-   * @param {number} score - The score of the round/match.
-   * @returns {void}
-   *
-   * @example <caption>Round object before/after setting the score.</caption>
-   * // Before
-   * {
-   *  teamIds: [1, 2]
-   * }
-   * // After
-   * {
-   *  teamIds: [1, 2],
-   *  score: 69
-   * }
-   */
+  //Setter function to set match score for a match
   setMatchScore(round, match, score) {
     const roundMatchUps = this.get('roundMatchUps');
     const roundMatchUp = roundMatchUps[round][match];
@@ -111,27 +124,18 @@ class TournamentModel extends Model {
     const scoredRoundMatchUp = Object.assign(roundMatchUp, { score: score });
     roundMatchUps[round][match] = scoredRoundMatchUp;
     this.set('roundMatchUps', roundMatchUps);
-
   }
 
-  /**
-   * Sets the matchups for a particular round.
-   *
-   * @param {number} round - The round number.
-   * @param {number[]} teams - List of team IDs.
-   * @returns {void}
-   */
+  //Sets the matched for the specified round
   setRoundMatchUps(round, teams) {
     const roundMatchUps = this.get('roundMatchUps');
     const teamsPerMatch = this.get('teamsPerMatch');
     const numberOfMatches = roundMatchUps[round].length;
 
-    // Defensive copy not to modify original teams when splice'ing
     const teamsCopy = Object.assign([], teams);
 
     for (let match = 0; match < numberOfMatches; match++) {
       const roundMatchUp = roundMatchUps[round][match];
-      // Assign teams for this match
       const teamIds = teamsCopy.splice(0, teamsPerMatch);
       const matchUps = Object.assign(roundMatchUp, { teamIds: teamIds });
       roundMatchUps[round][match] = matchUps;
@@ -139,22 +143,7 @@ class TournamentModel extends Model {
     }
   }
 
-  /**
-   * Gets the team scores and match score for a paticular round.
-   *
-   * @param {number} round - The round number.
-   * @returns {Object[]} List of round scores including the round and match number for reference.
-   * @example <caption>Example round score object that will be returned.</caption>
-   * {
-   *  round: 1,
-   *  match: 1,
-   *  matchScore: 69,
-   *  teamScores: {
-   *    0: 19, // key is the teamId
-   *    1: 42
-   *  }
-   * }
-   */
+  //Gets the team scores and further the match scores of matched in a round 
   getRoundScores(round) {
     const teams = this.get('teams');
     const roundMatchUps = this.get('roundMatchUps');
@@ -179,128 +168,6 @@ class TournamentModel extends Model {
         teamScores: teamScores
       });
     }
-
     return roundScores;
-  }
-
-  /**
-   * Initializes tournament matches for each round with empty placeholdlers.
-   *
-   * @returns {Object[]} List of empty match objects indexed by round.
-   */
-  _initRoundMatchUps() {
-    const numberOfTeams = this.get('numberOfTeams');
-    const numberOfRounds = this.get('numberOfRounds');
-    const teamsPerMatch = this.get('teamsPerMatch');
-
-    const matches = [];
-    let numberOfMatchesThisRound = numberOfTeams;
-
-    for (let round = 0; round < numberOfRounds; round++) {
-      matches[round] = [];
-      numberOfMatchesThisRound /= teamsPerMatch;
-
-      for (let match = 0; match < numberOfMatchesThisRound; match++) {
-        matches[round].push({});
-      }
-    }
-
-    return matches;
-  }
-
-  /**
-   * Getter for the number of teams.
-   *
-   * @returns {number} The number of teams.
-   */
-  getNumberOfTeams() {
-    return this.get('numberOfTeams');
-  }
-
-  /**
-   * Getter for the teams per match.
-   *
-   * @returns {number} The number of teams per match.
-   */
-  getTeamsPerMatch() {
-    return this.get('teamsPerMatch');
-  }
-
-  /**
-   * Getter for the number of rounds.
-   *
-   * @returns {number} The number of rounds.
-   */
-  getNumberOfRounds() {
-    return this.get('numberOfRounds');
-  }
-
-  /**
-   * Setter to set the tournament ID.
-   *
-   * Publishes a NEW_TOURNAMENT event to all listeners.
-   *
-   * @param {number} tournamentId - Tournament ID as returned by the server.
-   * @returns {void}
-   */
-  setTournamentId(tournamentId) {
-    this.set('id', tournamentId);
-  }
-
-  /**
-   * Getter for the tournament ID.
-   *
-   * @returns {number} The current tournament ID.
-   * @returns {void}
-   */
-  getTournamentId() {
-    return this.get('id');
-  }
-
-  /**
-   * Sets the final winner of the tournament.
-   *
-   * Publishes a TOURNAMENT_COMPLETED event to all listeners.
-   *
-   * @param {Object} winner - The winning team.
-   * @returns {void}
-   */
-  setWinner(winner) {
-    return this.set('winner', winner);
-  }
-
-  /**
-   * Getter for getting a team by ID.
-   *
-   * @param {number} teamId - The team ID.
-   * @returns {Object} team
-   * @example <caption>Example team object.</caption>
-   * {
-   *  teamId: 1,
-   *  name: 'Malicious Tall Jan',
-   *  score: 69
-   * };
-   */
-  getTeam(teamId) {
-    const teams = this.get('teams');
-    return teams[teamId];
-  }
-
-  /**
-   * Getter for getting a round by the round number.
-   *
-   * @param {number} round - The round number.
-   * @returns {Object[]} Round matches (a list of teamIds)
-   * @example <caption>Example round object.</caption>
-   * {
-   *  [
-   *    { teamIds: [1, 2] },
-   *    { teamIds: [3, 4] }
-   *  ]
-   * }
-   */
-  getRound(round) {
-    const roundMatchUps = this.get('roundMatchUps');
-    return roundMatchUps[round];
   }
 }

@@ -1,22 +1,17 @@
-/**
- * Tournament controller that coordinates with the tournament API to simulate a tournament.
- */
+/*
+  ClassName:  TournamentController
+  Purpose:    Contains all the business logic to for finding the winner 
+              of the tournament
+*/
 class TournamentController {
-  /**
-   * Creates an instance of TournamentController.
-   *
-   * @param {Object} tournamentModel - The TournamentModel to attach.
-   */
+
+  //Instantiates TournamentController class
   constructor(tournamentModel, progressBar) {
     this.model = tournamentModel;
     this.progressBar = progressBar;
   }
 
-  /**
-   * Main method to begin the tournament simulation.
-   *
-   * @returns {void}
-   */
+  //Starts the business logic to run tournament
   async run() {
     this.progressBar.remove();
     
@@ -31,35 +26,69 @@ class TournamentController {
       this.progressBar.update();
     }
     await Promise.all([
-      this._setMatchScores(TOURNAMENT.FIRST_ROUND),
-      this._setTeamScores(tournament.teams)
+      this.SetMatchScores(TOURNAMENT.FIRST_ROUND),
+      this.SetTeamScores(tournament.teams)
     ]);
-    const winner = await this._getWinner();
-    elements.winnertitle.innerHTML = "The winner is: ";
+    const winner = await this.GetWinner();
+    elements.winnertitle.innerHTML = "The Winner is : ";
     elements.winner.innerHTML = winner.name;
     this.model.setWinner(winner);
   }
 
-  /**
-   * Simulates the 'rest' of the tournament matches after the first round.
-   *
-   * @returns {Object} Winner of the tournament
-   * @example <caption>Example winner object.</caption>
-   * {
-   *  teamId: 1,
-   *  name: 'Malicious Tall Jan',
-   *  score: 69
-   * }
-   */
-  async _getWinner() {
+  //Set the team scores which it retrieves it from the server
+  async SetTeamScores(teams) {
+    try {
+      // Map array of team IDs to promises
+      const teamPromises = teams.map(async (teamId) => {
+        // Create promise to later resolve
+        const team = await TournamentAPI.getTeam(this.model.getTournamentId(), teamId);
+        return team;
+      });
+
+      // Resolve promises and set the team in the model
+      for (const teamPromise of teamPromises) {
+        const team = await teamPromise;
+        this.model.setTeam(team);
+      }
+    } catch (error) {
+      console.log('setMatchScore error', error.toString());
+    }
+  }
+
+  //Sets the matche scores of a round which is retrieved from the server
+  async SetMatchScores(round) {
+    try {
+      const numberOfMatches = this.model.getRound(round).length;
+      // Potentially hacky way to make an array from 0 -> numberOfMatches :)
+      const matches = [...Array(numberOfMatches).keys()];
+
+      // Map array of match numbers to promises
+      const matchPromises = matches.map(async (match) => {
+        // Create promise to later resolve
+        const matchScore = await TournamentAPI.getMatchScore(this.model.getTournamentId(), round, match);
+        return matchScore;
+      });
+
+      // Resolve promises and set the match score for the team in the model
+      for (const matchPromise of matchPromises) {
+        const match = await matchPromise;
+        this.model.setMatchScore(round, match.number, match.score);
+      }
+    } catch (error) {
+      console.log('setMatchScore error', error.toString());
+    }
+  }
+
+  //Runs the tournament further after first round and return the winner team object 
+  async GetWinner() {
     try {
       for (let round = 0; round < this.model.getNumberOfRounds(); round++) {
         // Avoid trip to server since we already have first round scores
-        if (round != TOURNAMENT.FIRST_ROUND) await this._setMatchScores(round);
+        if (round != TOURNAMENT.FIRST_ROUND) await this.SetMatchScores(round);
 
         // Get this round's scores and winners
         const roundScores = this.model.getRoundScores(round);
-        const roundWinners = await this._getRoundWinners(roundScores);
+        const roundWinners = await this.GetRoundWinners(roundScores);
         
         if (round < this.model.getNumberOfRounds() - 1) {
           // Set the next round of matchups
@@ -71,27 +100,14 @@ class TournamentController {
         }
       }
     } catch (error) {
-      console.log('_getWinner error', error.toString());
+      console.log('GetWinner error', error.toString());
     }
 
     return null;
   }
 
-  /**
-   * Gets the winning team ID given the match scores for a given round.
-   *
-   * Requests for each match of the round are first aggregated as promises
-   * and then asynchronously retrieved to save a sever round-trip.
-   *
-   * @param {Object[]} matchScores - The match score as well as the team scores for this round (see example below)
-   * @returns {number[]} The winning team ID
-   * @example <caption>Example match scores object.</caption>
-   * [ // Array indexed by match number
-   *  { round: 0, match: 0, matchScore: 49, teamScores: {0: 83, 1: 99} }, // teamScores indexed by team ID
-   *  { round: 0, match: 1, matchScore: 68, teamScores: {2: 68, 3: 18} }
-   * ]
-   */
-  async _getRoundWinners(matchScores) {
+  //Gets the winning team ids of a particular round
+  async GetRoundWinners(matchScores) {
     try {
       const roundWinners = [];
 
@@ -130,69 +146,9 @@ class TournamentController {
 
       return roundWinners;
     } catch (error) {
-      console.log('_getRoundWinners error', error.toString());
+      console.log('GetRoundWinners error', error.toString());
     }
 
     return null;
-  }
-
-  /**
-   * Gets the team scores from the server and sets them in the tournament model.
-   *
-   * Requests for each team score are first aggregated as promises
-   * and then asynchronously retrieved to save a sever round-trip.
-   *
-   * @param {number[]} teams - Array of team IDs.
-   * @returns {void}
-   */
-  async _setTeamScores(teams) {
-    try {
-      // Map array of team IDs to promises
-      const teamPromises = teams.map(async (teamId) => {
-        // Create promise to later resolve
-        const team = await TournamentAPI.getTeam(this.model.getTournamentId(), teamId);
-        return team;
-      });
-
-      // Resolve promises and set the team in the model
-      for (const teamPromise of teamPromises) {
-        const team = await teamPromise;
-        this.model.setTeam(team);
-      }
-    } catch (error) {
-      console.log('setMatchScore error', error.toString());
-    }
-  }
-
-  /**
-   * Gets the match scores for a round from the server and sets them in the tournament model.
-   *
-   * Requests for each match score are first aggregated as promises
-   * and then asynchronously retrieved to save a sever round-trip.
-   *
-   * @param {number} round - The round number.
-   * @returns {void}
-   */
-  async _setMatchScores(round) {
-    try {
-      const numberOfMatches = this.model.getRound(round).length;
-      // Potentially hacky way to make an array from 0 -> numberOfMatches :)
-      const matches = [...Array(numberOfMatches).keys()];
-
-      // Map array of match numbers to promises
-      const matchPromises = matches.map(async (match) => {
-        // Create promise to later resolve
-        const matchScore = await TournamentAPI.getMatchScore(this.model.getTournamentId(), round, match);
-        return matchScore;
-      });
-
-      // Resolve promises and set the match score for the team in the model
-      for (const matchPromise of matchPromises) {
-        const match = await matchPromise;
-        this.model.setMatchScore(round, match.number, match.score);
-      }
-    } catch (error) {
-      console.log('setMatchScore error', error.toString());
-    }
   }
 }
