@@ -30,8 +30,8 @@ class TournamentController {
       this.SetTeamScores(tournament.teams)
     ]);
     const winner = await this.GetWinner();
-    elements.winnertitle.innerHTML = "The Winner is : ";
     elements.winner.innerHTML = winner.name;
+    elements.winnertitle.innerHTML = "is the Winner. ";
     this.model.setWinner(winner);
   }
 

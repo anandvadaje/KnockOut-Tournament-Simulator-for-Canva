@@ -7,7 +7,6 @@ class ProgressBar {
     //Instantiates the ProgressBar class
     constructor(selector, length) {
         this.body = selector;
-        this.status = null;
         this.progress = null;
 
         this.position = -1;
