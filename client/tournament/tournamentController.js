@@ -38,14 +38,12 @@ class TournamentController {
   //Set the team scores which it retrieves it from the server
   async SetTeamScores(teams) {
     try {
-      // Map array of team IDs to promises
       const teamPromises = teams.map(async (teamId) => {
-        // Create promise to later resolve
         const team = await TournamentAPI.getTeam(this.model.getTournamentId(), teamId);
         return team;
       });
 
-      // Resolve promises and set the team in the model
+      //Resolve promises and set the team scores in tournamentModel
       for (const teamPromise of teamPromises) {
         const team = await teamPromise;
         this.model.setTeam(team);
@@ -59,17 +57,15 @@ class TournamentController {
   async SetMatchScores(round) {
     try {
       const numberOfMatches = this.model.getRound(round).length;
-      // Potentially hacky way to make an array from 0 -> numberOfMatches :)
+      // Make an array from 0->numberOfMatches)
       const matches = [...Array(numberOfMatches).keys()];
 
-      // Map array of match numbers to promises
       const matchPromises = matches.map(async (match) => {
-        // Create promise to later resolve
         const matchScore = await TournamentAPI.getMatchScore(this.model.getTournamentId(), round, match);
         return matchScore;
       });
 
-      // Resolve promises and set the match score for the team in the model
+      //Resolve promises and set the team match score in tournamentModel
       for (const matchPromise of matchPromises) {
         const match = await matchPromise;
         this.model.setMatchScore(round, match.number, match.score);
@@ -83,18 +79,15 @@ class TournamentController {
   async GetWinner() {
     try {
       for (let round = 0; round < this.model.getNumberOfRounds(); round++) {
-        // Avoid trip to server since we already have first round scores
+        
         if (round != TOURNAMENT.FIRST_ROUND) await this.SetMatchScores(round);
 
-        // Get this round's scores and winners
         const roundScores = this.model.getRoundScores(round);
         const roundWinners = await this.GetRoundWinners(roundScores);
         
         if (round < this.model.getNumberOfRounds() - 1) {
-          // Set the next round of matchups
           this.model.setRoundMatchUps(round + 1, roundWinners);
         } else {
-          // Final round, return the winner
           const winner = this.model.getTeam(roundWinners[0]);
           return winner;
         }
@@ -111,14 +104,11 @@ class TournamentController {
     try {
       const roundWinners = [];
 
-      // Map array of team scores to promises
       const roundScoresPromises = matchScores.map(async (match) => {
-        // Hacky way to iterate over objects like an array
         const teamScores = Object
           .keys(match.teamScores)
           .map(teamId => match.teamScores[teamId]);
 
-        // Create promise to later resolve
         const winner = await TournamentAPI.getRoundWinner(this.model.getTournamentId(), match.matchScore, teamScores, match.round, match.match);
         return winner;
       });
@@ -126,24 +116,23 @@ class TournamentController {
       // Resolve promises and find the winner
       for (const roundScoresPromise of roundScoresPromises) {
         const winner = await roundScoresPromise;
-        // Iterate over team scores
         const winningTeam = Object
           .keys(matchScores[winner.match].teamScores)
           .filter((teamId) => {
-            // Find team ID with matching score
             const teamScore = matchScores[winner.match].teamScores[teamId];
             return teamScore === winner.score;
           })
           .reduce((currentTeamId, nextTeamId) => {
-            // Break ties: choose team with lowest ID
+            // If tie, choose team with lowest ID
             return currentTeamId < nextTeamId ? currentTeamId : nextTeamId;
           });
+  
           if (this.progressBar) {
           this.progressBar.update();
         }
-          roundWinners.push(winningTeam);
+        
+        roundWinners.push(winningTeam);
       }
-
       return roundWinners;
     } catch (error) {
       console.log('GetRoundWinners error', error.toString());
