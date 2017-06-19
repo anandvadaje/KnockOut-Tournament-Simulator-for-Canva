@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- CSS -->
+    <link rel="stylesheet" href="./client/styles.css">
+    <!-- Meta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knockout Tournament</title>
+  </head>
+  <body>
+    <!-- Edit me. -->
+    <!-- For tests to pass, the IDs of the elements below MUST NOT change. -->
+    <h2 id="title">Single Elimination Knockout Tournament</h2>
+    <div id="tournamentForm">
+      <input id="teamsPerMatch" placeholder="Teams per match" type="number" />
+      <input id="numberOfTeams" placeholder="Number of teams" type="number" />
+      <button class="btn" id="start">Start</button>
+      <div class="response">
+        <span id="winner"></span>
+        <span id="winnertitle"></span>
+      </div>
+      <div class="response" id="error"></div>      
+      <div id="progressBar"></div>
+
+    </div>
+    <!-- Javascript -->
+    <script type="text/javascript" src="./client/utilities/constants.js"></script>
+    <script type="text/javascript" src="./client/utilities/elements.js"></script>
+    <script type="text/javascript" src="./client/utilities/httpRequestHandler.js"></script>
+    <script type="text/javascript" src="./client/base/model.js"></script>
+    <script type="text/javascript" src="./client/tournament/tournamentAPI.js"></script>
+    <script type="text/javascript" src="./client/tournament/tournamentModel.js"></script>
+    <script type="text/javascript" src="./client/tournament/tournamentController.js"></script>
+    <script type="text/javascript" src="./client/tournament/tournamentView.js"></script>
+    <script type="text/javascript" src="./client/start.js"></script>
+  </body>
+</html>

@@ -36,22 +36,19 @@ function validate(numberOfRounds) {
   elements.error.textContent = "";
   elements.winnertitle.textContent = "";
   elements.winner.textContent = "";
+
   if(elements.teamsPerMatch.value < 2){
     elements.error.textContent = "Teams per match cannot be less than 2";
-    // elements.progressBar.style.display = "none";
     return false;
   }
   if(elements.numberOfTeams.value < 2){
     elements.error.textContent = "Number of teams cannot be less than 2";
     return false;
-    // elements.progressBar.style.display = "none";
   }
   if(numberOfRounds - Math.ceil(numberOfRounds) != 0){
     elements.error.textContent = "Invalid pair of number of team: "+ elements.numberOfTeams.value+" and teams per match: "+elements.teamsPerMatch.value;
     return false;
-    // elements.progressBar.style.display = "none";
   }
-
+  
   return true;
-
 }
